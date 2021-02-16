@@ -1,0 +1,197 @@
+---
+title: "NBA Champs"
+author: "Ryan"
+date: "2/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rvest)
+library(tidyverse) 
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library("ggpubr")
+```
+
+```{r}
+Champs.1 <- "https://www.basketball-reference.com/leagues/" %>% read_html() %>%
+      html_table(fill=T) %>% .[[1]] 
+
+Champs <- NULL
+
+Champs$Season <- Champs.1[[1]]
+Champs$League<- Champs.1[[2]]
+Champs$Champion <- Champs.1[[3]]
+Champs$OFF_Rank <- NA
+Champs$DEF_Rank <- NA
+Champs$NET_Rank <-NA
+Champs$OFF_Rtg <-NA
+Champs$DEF_Rtg <-NA
+Champs$NET_Rtg<-NA
+Champs <- data.frame(Champs) %>% tail(length(Champs$Season)-2)
+# Champs$Champion[1]
+```
+
+```{r}
+#vector of links to each season of basketball's rankings
+Link <- c(
+"https://www.basketball-reference.com/leagues/NBA_2020_ratings.html", "https://www.basketball-reference.com/leagues/NBA_2019_ratings.html", "https://www.basketball-reference.com/leagues/NBA_2018_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2017_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2016_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2015_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2014_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2013_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2012_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2011_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2010_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2009_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2008_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2007_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2006_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2005_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2004_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2003_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2002_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2001_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_2000_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1999_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1998_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1997_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1996_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1995_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1994_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1993_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1992_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1991_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1990_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1989_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1988_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1987_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1986_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1985_ratings.html",
+"https://www.basketball-reference.com/leagues/NBA_1984_ratings.html")
+
+Champs <- Champs %>% head(length(Link))
+```
+
+
+```{r}
+#writing a function to pull the data automatically
+season.stats = function(link){
+  data = link %>% read_html() %>%
+      html_table(header = F, fill=T) %>% .[[1]] %>% 
+      rename("Team" = `X2`, "OFF_Rtg" = `X13`, "DEF_Rtg" = `X14`, "NET_Rtg" = `X15`) %>% select(2,13:15)
+  
+  
+  data <-data %>% tail(length(data$Team)-2) %>% mutate_at(2:4,as.numeric)
+data$OFF_Rank <- rank(-data$OFF_Rtg)
+data$DEF_Rank <- rank(data$DEF_Rtg)
+data$NET_Rank <- rank(-data$NET_Rtg)
+
+  return(data)
+  }
+# 
+# champ.merge = function(champs.data, stats.data){
+#   
+#   data = filter(stats.data, Champ == champs.data$Champ[i])
+#   
+#   OFF_Rank.VEC <- c(OFF_Rank.VEC, data$OFF_Rank)
+#   
+#   DEF_Rank.VEC <- c(DEF_Rank.VEC, data$DEF_Rank)
+#   
+#   NET_Rank.VEC <-c(NET_Rank.VEC, data$NET_Rank)
+#   
+#   OFF_Rtg.VEC <-c(OFF_Rtg.VEC, data$OFF_Rtg)
+#   
+#   DEF_Rtg.VEC <-c(DEF_Rtg.VEC, data$DEF_Rtg)
+#   
+#   NET_Rtg.VEC<-c(NET_Rtg.VEC, data$NET_Rtg)
+#   return(champs.data)
+# }
+# TEST = NULL
+# TEST <- c(TEST, 1)
+# TEST <- c(TEST, 2)
+```
+
+```{r}
+  OFF_Rank.VEC <- NULL
+  DEF_Rank.VEC <- NULL
+  NET_Rank.VEC <-NULL
+  OFF_Rtg.VEC <-NULL
+  DEF_Rtg.VEC <-NULL
+  NET_Rtg.VEC<-NULL
+for (i in (i=1):length(Link)) {
+  stats.data = season.stats(Link[i])
+  data = filter(stats.data, Team == Champs$Champ[i])
+  
+  OFF_Rank.VEC <- c(OFF_Rank.VEC, data$OFF_Rank)
+  
+  DEF_Rank.VEC <- c(DEF_Rank.VEC, data$DEF_Rank)
+  
+  NET_Rank.VEC <-c(NET_Rank.VEC, data$NET_Rank)
+  
+  OFF_Rtg.VEC <-c(OFF_Rtg.VEC, data$OFF_Rtg)
+  
+  DEF_Rtg.VEC <-c(DEF_Rtg.VEC, data$DEF_Rtg)
+  
+  NET_Rtg.VEC<-c(NET_Rtg.VEC, data$NET_Rtg) 
+}
+  
+Champs$OFF_Rank <- OFF_Rank.VEC
+Champs$DEF_Rank <- DEF_Rank.VEC
+Champs$NET_Rank <- NET_Rank.VEC
+Champs$OFF_Rtg <- OFF_Rtg.VEC
+Champs$DEF_Rtg <- DEF_Rtg.VEC
+Champs$NET_Rtg<- NET_Rtg.VEC
+```
+
+
+```{r}
+Champs$Year = NA
+for (i in (i=1):length(Champs$Season)){
+  Champs$Year[i] = 2021-i
+}
+```
+
+
+```{r}
+OFF_DEF_RTG <- ggplot(data = Champs, aes(x=OFF_Rank, y= DEF_Rank)) + geom_point() + 
+  geom_vline (xintercept = 10, alpha=0.8,linetype=4, color = "red") + 
+  geom_vline (xintercept = 5, alpha=0.8,linetype=4, color = "blue") +
+  geom_hline(yintercept = 10, alpha=0.8,linetype=4, color = "red") + 
+  geom_hline(yintercept = 5, alpha=0.8,linetype=4, color = "blue") + 
+  ggtitle("NBA Champions' Rankings since 1984") + theme_minimal() + ylab("Defensive Rank for Championship Season") + xlab("Offensive Rank for Championship Season")
+(OFF_DEF_RTG)
+#all but three champions has been in the top five in offense or defense while being top 10 in both
+```
+
+
+
+```{r}
+Losers <- NULL
+Losers <- season.stats(Link[2])[1,]
+k=1
+X=10
+for (i in (i=1):length(Link)) {
+  temp = season.stats(Link[i])
+  temp$Year = 2021-i
+  temp$SUM <- temp$OFF_Rank + temp$DEF_Rank
+  
+  for (j in (j=1):length(temp$Team)){
+    if(temp$SUM[j] <= X && temp$Team[j] != Champs$Champion[i]){
+      Losers[k,] <- temp[j,]
+      k <- k+1
+    }
+  }
+}
+
+(Losers) #38 teams with the sum of offensive and defensive rankings less than 10 (ie, top 5 offense or defense). That works out to be about 1 team per year that 
+ggplot(data = Losers, aes(x=OFF_Rank, y= DEF_Rank)) + geom_point() + 
+  geom_vline (xintercept = 5, alpha=0.8,linetype=4, color = "blue") +
+  geom_hline(yintercept = 5, alpha=0.8,linetype=4, color = "blue") + 
+  ggtitle("NBA Non-Champions' Rankings since 1984") + theme_minimal() + ylab("Defensive Rank for Season") + xlab("Offensive Rank for Season")
+
+```
+
